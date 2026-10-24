@@ -70,6 +70,14 @@ static void rtw_dev_shutdown(struct device *dev)
 					else
 					#endif
 					{
+						/*
+						 * Stop the cmd thread first like rtw_dev_remove()
+						 * does. It may still be handling a C2H event that
+						 * calls into btcoex, whose adapter the halt notify
+						 * clears, which crashed the kernel on reboot.
+						 */
+						rtw_set_drv_stopped(adapter);
+						rtw_stop_cmd_thread(adapter);
 						#ifdef CONFIG_BT_COEXIST
 						RTW_INFO("%s call halt notify\n", __FUNCTION__);
 						rtw_btcoex_HaltNotify(adapter);

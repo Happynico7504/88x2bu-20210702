@@ -1885,6 +1885,7 @@ struct rsne_info {
 	u8 err;
 };
 int rtw_rsne_info_parse(const u8 *ie, uint ie_len, struct rsne_info *info);
+const u8 *rtw_rsn_selector_normalize(const u8 *s, u8 *buf);
 
 unsigned char *rtw_get_wpa_ie(unsigned char *pie, int *wpa_ie_len, int limit);
 unsigned char *rtw_get_wpa2_ie(unsigned char *pie, int *rsn_ie_len, int limit);

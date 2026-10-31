@@ -2986,10 +2986,13 @@ unsigned int should_forbid_n_rate(_adapter *padapter)
 					return _FALSE;
 				break;
 
-			case _RSN_IE_2_:
-				if ((_rtw_memcmp((pIE->data + 8), RSN_CIPHER_SUITE_CCMP, 4))  ||
-				    (_rtw_memcmp((pIE->data + 12), RSN_CIPHER_SUITE_CCMP, 4)))
+			case _RSN_IE_2_: {
+				u8 nbuf[4];
+
+				if ((_rtw_memcmp(rtw_rsn_selector_normalize(pIE->data + 8, nbuf), RSN_CIPHER_SUITE_CCMP, 4))  ||
+				    (_rtw_memcmp(rtw_rsn_selector_normalize(pIE->data + 12, nbuf), RSN_CIPHER_SUITE_CCMP, 4)))
 					return _FALSE;
+			}
 
 			default:
 				break;

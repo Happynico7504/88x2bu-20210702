@@ -734,8 +734,30 @@ int rtw_get_wpa_cipher_suite(u8 *s)
 	return 0;
 }
 
+/*
+ * A Wii U and its GamePad use Nintendo's OUI (a4-c0-e1) instead of 00-0f-ac
+ * in otherwise standard RSN selectors (CCMP = a4-c0-e1:4, PSK = a4-c0-e1:2).
+ * Treat them as the standard suites so a GamePad can associate with an AP
+ * that hostapd (built with CONFIG_TENDONIN) runs on this driver; the actual
+ * crypto is plain CCMP and keys are installed with standard cipher values.
+ */
+const u8 *rtw_rsn_selector_normalize(const u8 *s, u8 *buf)
+{
+	if (s[0] == 0xa4 && s[1] == 0xc0 && s[2] == 0xe1) {
+		buf[0] = 0x00;
+		buf[1] = 0x0f;
+		buf[2] = 0xac;
+		buf[3] = s[3];
+		return buf;
+	}
+	return s;
+}
+
 int rtw_get_rsn_cipher_suite(u8 *s)
 {
+	u8 nbuf[RSN_SELECTOR_LEN];
+
+	s = (u8 *)rtw_rsn_selector_normalize(s, nbuf);
 	if (_rtw_memcmp(s, RSN_CIPHER_SUITE_NONE, RSN_SELECTOR_LEN) == _TRUE)
 		return WPA_CIPHER_NONE;
 	if (_rtw_memcmp(s, RSN_CIPHER_SUITE_WEP40, RSN_SELECTOR_LEN) == _TRUE)
@@ -765,6 +787,9 @@ int rtw_get_rsn_cipher_suite(u8 *s)
 
 u32 rtw_get_akm_suite_bitmap(u8 *s)
 {
+	u8 nbuf[RSN_SELECTOR_LEN];
+
+	s = (u8 *)rtw_rsn_selector_normalize(s, nbuf);
 	if (_rtw_memcmp(s, WLAN_AKM_8021X, RSN_SELECTOR_LEN) == _TRUE)
 		return WLAN_AKM_TYPE_8021X;
 	if (_rtw_memcmp(s, WLAN_AKM_PSK, RSN_SELECTOR_LEN) == _TRUE)

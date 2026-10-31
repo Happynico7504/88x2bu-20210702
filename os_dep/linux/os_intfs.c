@@ -2155,6 +2155,32 @@ static const struct ethtool_ops rtw_ethtool_ops = {
 #endif /* CONFIG_IOCTL_CFG80211 */
 /* For ethtool --- */
 
+/*
+ * /sys/class/net/<iface>/tsf: the hardware TSF timer of this interface's
+ * port, in the same "0x%016llx" format as mac80211's debugfs tsf file.
+ * Wii U GamePad streaming needs it: media packets carry TSF-based
+ * timestamps that have to be expressed in the AP's own TSF.
+ */
+static ssize_t tsf_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	_adapter *adapter = (_adapter *)rtw_netdev_priv(to_net_dev(dev));
+
+	if (!adapter || RTW_CANNOT_IO(adapter) || !rtw_is_hw_init_completed(adapter))
+		return -ENODEV;
+	return sprintf(buf, "0x%016llx\n",
+		(unsigned long long)rtw_hal_get_tsftr_by_port(adapter, get_hw_port(adapter)));
+}
+static DEVICE_ATTR_RO(tsf);
+
+static struct attribute *rtw_ndev_attrs[] = {
+	&dev_attr_tsf.attr,
+	NULL,
+};
+
+static const struct attribute_group rtw_ndev_attr_group = {
+	.attrs = rtw_ndev_attrs,
+};
+
 int rtw_os_ndev_register(_adapter *adapter, const char *name)
 {
 	struct dvobj_priv *dvobj = adapter_to_dvobj(adapter);
@@ -2186,6 +2212,9 @@ int rtw_os_ndev_register(_adapter *adapter, const char *name)
 #endif
 	/* alloc netdev name */
 	rtw_init_netdev_name(ndev, name);
+
+	/* Created and removed together with the netdev */
+	ndev->sysfs_groups[0] = &rtw_ndev_attr_group;
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 17, 0) || defined(RHEL8))
 	eth_hw_addr_set(ndev, adapter_mac_addr(adapter));
